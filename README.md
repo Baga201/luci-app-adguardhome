@@ -55,6 +55,65 @@ VmRSS运存占用值<br>
   - 方法四gfw代理：dns重定向-重定向53端口到AdGuardHome,设置adh上游dns 为127.0.0.1:53
 #### 项目已经基本稳定，有bug欢迎主动反馈
 
+TRANSLATED TO ENGLISH USING CHATGPT (gpt4)
+# luci-app-adguardhome
+A complex Luci interface for AdGuardHome on OpenWRT
+
+ - Manage web portal port
+ - Luci download/update core version (supports custom link downloads)
+   - If it's a tar.gz file, it needs to have the same file structure as the official one
+   - Or it could be the main program binary
+ - UPX compression of the core (requires xz dependency, script auto-downloads, include this package during compilation if opkg source is not connectable)
+ - DNS redirection
+   - As an upstream server for dnsmasq (In AGH, all IPs are counted as 127.0.0.1, unable to count clients and adjust settings accordingly, ssr-plus works normally)
+   - Redirect port 53 to AdGuardHome (ipv6 needs ipv6 nat redirect, otherwise, if the client uses ipv6, filtering is ineffective, ssr-plus won't work without dnsmasq as upstream)
+   - Use port 53 to replace dnsmasq (set AGH's dnsip to 0.0.0.0, AGH and dnsmasq ports will be swapped, ssr-plus won't work without dnsmasq as upstream)
+ - Customizable executable file path (supports tmp, auto-downloads bin after each reboot)
+ - Customizable configuration file path
+ - Customizable working directory
+ - Customizable log file path
+ - gfwlist deletion/addition/defining upstream DNS servers; also check out https://github.com/rufengsuixing/luci-app-autoipsetadder
+ - Modify web login password
+ - Reverse/forward order for viewing/deleting/backing up runtime logs, updated every 3 seconds + local browser timezone conversion
+ - Manual configuration file editing
+   - Supports YAML editor
+   - Template for quick configuration
+ - System upgrade retains selected files
+ - Restart adh after boot when network is ready (3-minute timeout, mainly to prevent filter update failures)
+ - Backup selected files in the working directory on shutdown (Note: backup is also triggered during ipk updates)
+ - Scheduled tasks (default values, time and parameters can be adjusted in scheduled tasks)
+   - Auto-update core (use cautiously) (3:30/day)
+   - Auto-truncate query log (hourly, limit to 2000 lines)
+   - Auto-truncate runtime log (3:30/day, limit to 2000 lines)
+   - Auto-update ipv6 hosts and restart adh (hourly, no restart if no update)
+   - Auto-update gfw list and restart adh (3:30/day, no restart if no update)
+#### Known Issues:
+ - db database does not support being on file systems that don't support mmap, like jffs2 data-stk-oo, please change the working directory; the software will automatically create a soft link to /tmp on jffs2, leading to dns database loss on reboot
+ - ~~AdGuardHome does not support ipset settings, it can only exist as an upstream of dnsmasq when ipset is used, vote for this feature here: <br>
+ https://github.com/AdguardTeam/AdGuardHome/issues/1191~~
+ - Feedback on numerous 127.0.0.1 queries to localhost due to ddns plugin; if not using ddns plugin, please delete or comment out \etc\hotplug.d\iface\95-ddns; for other abnormal local machine queries, advanced users can use kmod to find the cause https://github.com/rufengsuixing/kmod-plog-port
+ - If multiple submissions are required for a response, please submit an issue promptly
+#### Usage
+ - Download the release and install it using opkg
+ - Or compile OpenWRT and clone this project to include it in the package selection
+#### About Compression
+With a serious mindset, I tested the memory and space usage on a jffs2 compressed filesystem using upx compression (unit kb, using best compression):<br>
+File Size<br>
+Original file 14112, after using upx compression 5309<br>
+Actual usage 6260, after using upx compression 5324, difference 936<br>
+VmRSS Memory Usage<br>
+Uncompressed 14380, after using upx compression 18496, difference -4116<br>
+For compressed file systems, the benefits are there, but not significant<br>
+For non-compressed file systems, the cost-effectiveness is still high<br>
+So, compression trades RAM space for ROM space, enable it if you think it's worth it
+#### About SSR Cooperation
+  - Method one, gfw proxy: DNS redirection - as an upstream server for dnsmasq
+  - Method two, gfw proxy: Manually set adh upstream DNS to 127.0.0.1:[your listening port], then use DNS redirection - replace dnsmasq with port 53 (dnsmasq becomes upstream after port swapping)
+  - Method three, foreign IP proxy: Any redirection method, add gfw list to adh, turn on scheduled tasks to update gfw regularly
+  - Method four, gfw proxy: DNS redirection - redirect port 53 to AdGuardHome, set adh upstream DNS to 127.0.0.1:53
+#### The Project is Basically Stable, Bug Reports Welcome
+
+
 Complex openwrt AdGuardHome luci
 
  - can manage browser port
